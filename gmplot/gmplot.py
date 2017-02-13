@@ -25,7 +25,7 @@ class GoogleMapPlotter(object):
         self.heatmap_points = []
         self.radpoints = []
         self.gridsetting = None
-        self.coloricon = os.path.join(os.path.dirname(__file__), 'markers/%s.png')
+        self.coloricon = 'http://chart.apis.google.com/chart?chst=d_map_pin_letter&chld=%s|%s|000000'
         self.color_dict = mpl_color_map
         self.html_color_codes = html_color_codes
 
@@ -45,24 +45,31 @@ class GoogleMapPlotter(object):
     def grid(self, slat, elat, latin, slng, elng, lngin):
         self.gridsetting = [slat, elat, latin, slng, elng, lngin]
 
-    def marker(self, lat, lng, color='#FF0000', c=None, title="no implementation"):
+    def marker(self, lat, lng, color='#FF0000', c=None, title=""):
         if c:
             color = c
         color = self.color_dict.get(color, color)
         color = self.html_color_codes.get(color, color)
         self.points.append((lat, lng, color[1:], title))
 
-    def scatter(self, lats, lngs, color=None, size=None, marker=True, c=None, s=None, **kwargs):
+    def scatter(self, lats, lngs, color=None, size=None, marker=True, c=None, s=None, titles=None, **kwargs):
         color = color or c
         size = size or s or 40
         kwargs["color"] = color
         kwargs["size"] = size
         settings = self._process_kwargs(kwargs)
-        for lat, lng in zip(lats, lngs):
-            if marker:
-                self.marker(lat, lng, settings['color'])
-            else:
-                self.circle(lat, lng, size, **settings)
+        if titles is not None:
+            for lat, lng, title in zip(lats, lngs, titles):
+                if marker:
+                    self.marker(lat, lng, settings['color'], title=title)
+                else:
+                    self.circle(lat, lng, size, **settings)
+        else:
+            for lat, lng in zip(lats, lngs):
+                if marker:
+                    self.marker(lat, lng, settings['color'])
+                else:
+                    self.circle(lat, lng, size, **settings)
 
     def circle(self, lat, lng, radius, color=None, c=None, **kwargs):
         color = color or c
@@ -278,7 +285,7 @@ class GoogleMapPlotter(object):
         f.write('\t\tvar latlng = new google.maps.LatLng(%f, %f);\n' %
                 (lat, lon))
         f.write('\t\tvar img = new google.maps.MarkerImage(\'%s\');\n' %
-                (self.coloricon % color))
+                (self.coloricon % (title, color)))
         f.write('\t\tvar marker = new google.maps.Marker({\n')
         f.write('\t\ttitle: "%s",\n' % title)
         f.write('\t\ticon: img,\n')
