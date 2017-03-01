@@ -15,7 +15,7 @@ def safe_iter(var):
 
 class GoogleMapPlotter(object):
 
-    def __init__(self, center_lat, center_lng, zoom):
+    def __init__(self, center_lat, center_lng, zoom, map_type='google.maps.MapTypeId.ROADMAP'):
         self.center = (float(center_lat), float(center_lng))
         self.zoom = int(zoom)
         self.grids = None
@@ -28,6 +28,7 @@ class GoogleMapPlotter(object):
         self.coloricon = 'http://chart.apis.google.com/chart?chst=d_map_pin_letter&chld=%s|%s|000000'
         self.color_dict = mpl_color_map
         self.html_color_codes = html_color_codes
+        self.map_type = map_type
 
     @classmethod
     def from_geocode(cls, location_string, zoom=13):
@@ -275,7 +276,7 @@ class GoogleMapPlotter(object):
         f.write('\t\tvar myOptions = {\n')
         f.write('\t\t\tzoom: %d,\n' % (self.zoom))
         f.write('\t\t\tcenter: centerlatlng,\n')
-        f.write('\t\t\tmapTypeId: google.maps.MapTypeId.ROADMAP\n')
+        f.write('\t\t\tmapTypeId: %s\n' % self.map_type)
         f.write('\t\t};\n')
         f.write(
             '\t\tvar map = new google.maps.Map(document.getElementById("map_canvas"), myOptions);\n')
