@@ -46,29 +46,29 @@ class GoogleMapPlotter(object):
     def grid(self, slat, elat, latin, slng, elng, lngin):
         self.gridsetting = [slat, elat, latin, slng, elng, lngin]
 
-    def marker(self, lat, lng, color='#FF0000', c=None, title=""):
-        if c:
-            color = c
+    def marker(self, lat, lng, **kwargs):
+        color = kwargs.get('color') or kwargs.get('c') or '#FF0000'
         color = self.color_dict.get(color, color)
         color = self.html_color_codes.get(color, color)
-        self.points.append((lat, lng, color[1:], title))
+        title = kwargs.get('title', '')
+        info_window = kwargs.get('info_window', None)
+        self.points.append({'lat': lat, 'lng': lng, 'color': color[1:], 'title': title, 'info_window': info_window})
 
     def scatter(self, lats, lngs, color=None, size=None, marker=True, c=None, s=None, titles=None, **kwargs):
-        color = color or c
-        size = size or s or 40
-        kwargs["color"] = color
-        kwargs["size"] = size
+        kwargs["color"] = color or c
+        kwargs["size"] = size or s or 40
         settings = self._process_kwargs(kwargs)
         if titles is not None:
             for lat, lng, title in zip(lats, lngs, titles):
+                settings['title'] = title
                 if marker:
-                    self.marker(lat, lng, settings['color'], title=title)
+                    self.marker(lat, lng, **settings)
                 else:
                     self.circle(lat, lng, size, **settings)
         else:
             for lat, lng in zip(lats, lngs):
                 if marker:
-                    self.marker(lat, lng, settings['color'])
+                    self.marker(lat, lng, **settings)
                 else:
                     self.circle(lat, lng, size, **settings)
 
@@ -108,6 +108,10 @@ class GoogleMapPlotter(object):
                             kwargs.get("c", None) or \
                             settings["edge_color"] or \
                             settings["face_color"]
+
+        settings["arrow"] = kwargs.get("arrow", False)
+
+        settings["info_window"] = kwargs.get("info_window", None) or kwargs.get("info", None)
 
         # Need to replace "plum" with "#DDA0DD" and "c" with "#00FFFF" (cyan).
         for key, color in settings.items():
@@ -240,7 +244,7 @@ class GoogleMapPlotter(object):
 
     def write_points(self, f):
         for point in self.points:
-            self.write_point(f, point[0], point[1], point[2], point[3])
+            self.write_point(f, point)
 
     def get_cycle(self, lat, lng, rad):
         # unit of radius: meter
@@ -282,9 +286,14 @@ class GoogleMapPlotter(object):
             '\t\tvar map = new google.maps.Map(document.getElementById("map_canvas"), myOptions);\n')
         f.write('\n')
 
-    def write_point(self, f, lat, lon, color, title):
+    def write_point(self, f, point):
+        lat = point.get('lat')
+        lng = point.get('lng')
+        color = point.get('color')
+        title = point.get('title', '')
+        info_window = point.get('info_window', None)
         f.write('\t\tvar latlng = new google.maps.LatLng(%f, %f);\n' %
-                (lat, lon))
+                (lat, lng))
         f.write('\t\tvar img = new google.maps.MarkerImage(\'%s\');\n' %
                 (self.coloricon % (title, color)))
         f.write('\t\tvar marker = new google.maps.Marker({\n')
@@ -293,6 +302,8 @@ class GoogleMapPlotter(object):
         f.write('\t\tposition: latlng\n')
         f.write('\t\t});\n')
         f.write('\t\tmarker.setMap(map);\n')
+        if info_window:
+            f.write('\t\tmarker.addListener("click", function(){ (new google.maps.InfoWindow({content: "%s", position: new google.maps.LatLng(%f, %f)})).open(map); });\n' % (info_window, lat, lng))
         f.write('\n')
 
     def write_polyline(self, f, path, settings):
@@ -301,6 +312,7 @@ class GoogleMapPlotter(object):
         strokeColor = settings.get('color') or settings.get('edge_color')
         strokeOpacity = settings.get('edge_alpha')
         strokeWeight = settings.get('edge_width')
+        arrow = settings.get('arrow')
 
         f.write('var PolylineCoordinates = [\n')
         for coordinate in path:
@@ -316,6 +328,8 @@ class GoogleMapPlotter(object):
         f.write('strokeColor: "%s",\n' % (strokeColor))
         f.write('strokeOpacity: %f,\n' % (strokeOpacity))
         f.write('strokeWeight: %d\n' % (strokeWeight))
+        if arrow:
+            f.write(',icons: [{ icon: {fillColor: "%s", scale: 10, path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW}, offset:"50%%" }]\n' % (strokeColor))
         f.write('});\n')
         f.write('\n')
         f.write('Path.setMap(map);\n')
