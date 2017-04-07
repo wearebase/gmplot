@@ -56,21 +56,24 @@ class GoogleMapPlotter(object):
 
     def scatter(self, lats, lngs, color=None, size=None, marker=True, c=None, s=None, titles=None, **kwargs):
         kwargs["color"] = color or c
-        kwargs["size"] = size or s or 40
+        if not isinstance(size, (list, tuple)):
+            kwargs["size"] = size or s or 40
+            size = len(lats) * [kwargs["size"]]
+
         settings = self._process_kwargs(kwargs)
         if titles is not None:
-            for lat, lng, title in zip(lats, lngs, titles):
+            for lat, lng, title, radius in zip(lats, lngs, titles, size):
                 settings['title'] = title
                 if marker:
                     self.marker(lat, lng, **settings)
                 else:
-                    self.circle(lat, lng, size, **settings)
+                    self.circle(lat, lng, radius, **settings)
         else:
-            for lat, lng in zip(lats, lngs):
+            for lat, lng, radius in zip(lats, lngs, size):
                 if marker:
                     self.marker(lat, lng, **settings)
                 else:
-                    self.circle(lat, lng, size, **settings)
+                    self.circle(lat, lng, radius, **settings)
 
     def circle(self, lat, lng, radius, color=None, c=None, **kwargs):
         color = color or c
