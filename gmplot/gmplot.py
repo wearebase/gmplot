@@ -62,20 +62,24 @@ class GoogleMapPlotter(object):
             size = len(lats) * [kwargs["size"]]
 
         settings = self._process_kwargs(kwargs)
-        if titles is not None:
-            for lat, lng, title, radius, info in zip(lats, lngs, titles, size, info_windows):
-                settings['title'] = title
-                settings['info_window'] = info
-                if marker:
-                    self.marker(lat, lng, **settings)
-                else:
-                    self.circle(lat, lng, radius, **settings)
-        else:
-            for lat, lng, radius in zip(lats, lngs, size):
-                if marker:
-                    self.marker(lat, lng, **settings)
-                else:
-                    self.circle(lat, lng, radius, **settings)
+
+        if not isinstance(titles, (list, tuple)):
+            titles = len(lats) * ['']
+
+        elements = [lats, lngs, size, titles]
+
+        if info_windows:
+            elements.append(info_windows)
+
+        for x in zip(*elements):
+            settings['title'] = x[3]
+            if info_windows:
+                settings['info_window'] = x[4]
+
+            if marker:
+                self.marker(x[0], x[1], **settings)
+            else:
+                self.circle(x[0], x[1], x[2], **settings)
 
     def circle(self, lat, lng, radius, color=None, c=None, **kwargs):
         color = color or c
