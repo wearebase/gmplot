@@ -15,7 +15,7 @@ def safe_iter(var):
 
 class GoogleMapPlotter(object):
 
-    def __init__(self, center_lat, center_lng, zoom, map_type='google.maps.MapTypeId.ROADMAP'):
+    def __init__(self, center_lat, center_lng, zoom, map_type='google.maps.MapTypeId.ROADMAP', autorefresh=None):
         self.center = (float(center_lat), float(center_lng))
         self.zoom = int(zoom)
         self.grids = None
@@ -30,6 +30,7 @@ class GoogleMapPlotter(object):
         self.html_color_codes = html_color_codes
         self.map_type = map_type
         self.__summary = None
+        self.autorefresh = autorefresh
 
     @classmethod
     def from_geocode(cls, location_string, zoom=13):
@@ -68,12 +69,12 @@ class GoogleMapPlotter(object):
 
         elements = [lats, lngs, size, titles]
 
-        if info_windows:
+        if info_windows is not None:
             elements.append(info_windows)
 
         for x in zip(*elements):
             settings['title'] = x[3]
-            if info_windows:
+            if info_windows is not None:
                 settings['info_window'] = x[4]
 
             if marker:
@@ -200,6 +201,8 @@ class GoogleMapPlotter(object):
         f.write('<head>\n')
         f.write('<meta name="viewport" content="initial-scale=1.0, user-scalable=no" />\n')
         f.write('<meta http-equiv="content-type" content="text/html; charset=UTF-8"/>\n')
+        if self.autorefresh is not None:
+            f.write('<meta http-equiv="refresh" content="%d"/>\n' % self.autorefresh)
         f.write('<title>Google Maps - pygmaps </title>\n')
         f.write('<script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?libraries=visualization&sensor=true_or_false"></script>\n')
         f.write('<script type="text/javascript">\n')
@@ -425,3 +428,4 @@ if __name__ == "__main__":
                     [-122.142048, -122.141275, -122.140503, -122.139688, -122.138872, -122.138078, -122.137241, -122.136405, -122.135568, -122.134731, -122.133894, -122.133057, -122.13222, -122.131383, -122.130557, -122.129999])
     mymap.scatter(scatter_path[0], scatter_path[1], c='r', marker=True)
     mymap.draw('./mymap.html')
+
