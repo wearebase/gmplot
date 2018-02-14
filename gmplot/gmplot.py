@@ -305,6 +305,18 @@ class GoogleMapPlotter(object):
         f.write(
             '\t\tvar map = new google.maps.Map(document.getElementById("map_canvas"), myOptions);\n')
         f.write('\n')
+        f.write('map.mapTypes.set("OSM", new google.maps.ImageMapType({\
+                getTileUrl: function(coord, zoom) {\
+                    var tilesPerGlobe = 1 << zoom;\
+                    var x = coord.x % tilesPerGlobe;\
+                    if (x < 0) {\
+                        x = tilesPerGlobe+x;\
+                    }\
+                    return "http://tile.openstreetmap.org/" + zoom + "/" + x + "/" + coord.y + ".png";\
+                },\
+                tileSize: new google.maps.Size(256, 256),\
+                name: "OpenStreetMap",\
+                maxZoom: 18}));')
 
     def write_point(self, f, point):
         lat = point.get('lat')
